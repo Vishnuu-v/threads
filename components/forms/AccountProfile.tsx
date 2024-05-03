@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import Image from 'next/image';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useState } from 'react';
 
 interface Props {
     user: {
@@ -33,6 +33,8 @@ interface Props {
 
 const AccountProfile = ({user, btnTitle}: Props) => {
 
+    const [files, setFiles] = useState<File[]>([])
+
     const form = useForm({
         resolver: zodResolver(UserValidation),
         defaultValues: {
@@ -43,8 +45,26 @@ const AccountProfile = ({user, btnTitle}: Props) => {
         }
     })
 
-    const handleImage = (e: ChangeEvent, fieldChange: (value: string) => void ) => {
-        e.preventDefault()
+    const handleImage = (e: ChangeEvent<HTMLInputElement>, fieldChange: (value: string) => void ) => {
+        e.preventDefault();
+
+        const fileReader = new FileReader();
+
+        if(e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+
+            setFiles(Array.from(e.target.files))
+
+            if(!file.type.includes('image')) return;
+
+            fileReader.onload = async (event) => {
+                const imageDataUrl = event.target?.result?.toString() || '';
+
+                fieldChange(imageDataUrl)
+
+            }
+            fileReader.readAsDataURL(file)
+        }
     }
 
     function onSubmit (values: z.infer<typeof UserValidation>) {
@@ -63,7 +83,7 @@ const AccountProfile = ({user, btnTitle}: Props) => {
                             <FormLabel className='account-form_image-label'>{field.value ? (
                                 <Image  
                                     src={field.value}
-                                    alt='profile_photo'
+                                    alt='profile_icon'
                                     width={96}
                                     height={96}
                                     priority
@@ -72,16 +92,16 @@ const AccountProfile = ({user, btnTitle}: Props) => {
                             ) : (
                                 <Image  
                                     src='/assets/profile.svg'
-                                    alt='profile_photo'
+                                    alt='profile_icon'
                                     width={24}
                                     height={24}
                                     className='object-contain'
                                 />
-                            )}</FormLabel>
+                            )}
+                            </FormLabel>
                             <FormControl className='flex-1 text-base-semibold text-gray-200'>
                                 <Input 
                                     type='file' 
-                                    {...field} 
                                     accept='image/*'
                                     placeholder='Upload a photo'
                                     className='account-form_image-input'
